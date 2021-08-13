@@ -1,0 +1,4 @@
+access_key = "ACCESS"
+secret_key = "SECRET"
+endpoint_url = "https://example.com"
+bucket = "mybucket"
