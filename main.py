@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import string
+import typing
 
 import boto3
 import botocore.client
@@ -18,6 +19,7 @@ class Settings(pydantic.BaseSettings):
     endpoint_url: str
     prefix: str
     bucket: str
+    token: typing.Optional[str]
 
 
 class S3Helper():
@@ -55,6 +57,11 @@ def is_valid_hash(hash):
     return len(hash) == 5 and all(c in string.hexdigits for c in hash)
 
 
+def require_authorization(x_token: typing.Optional[str] = fastapi.Header(None)):
+    if settings.token is not None and x_token != settings.token:
+        raise fastapi.HTTPException(status_code=401)
+
+
 logger = logging.getLogger("uvicorn")
 config_path = os.getenv("PWNED_PASSWORDS_CONFIG")
 config = toml.load(config_path)
@@ -72,7 +79,7 @@ if not s3.ping():
 app = fastapi.FastAPI()
 
 
-@app.get("/range/{hash}")
+@app.get("/range/{hash}", dependencies=[fastapi.Depends(require_authorization)])
 def get_range(hash: str):
     if not is_valid_hash(hash):
         raise fastapi.HTTPException(status_code=400, detail="Invalid hash")
