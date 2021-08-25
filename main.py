@@ -16,6 +16,7 @@ class Settings(pydantic.BaseSettings):
     access_key: str
     secret_key: str
     endpoint_url: str
+    prefix: str
     bucket: str
 
 
@@ -77,9 +78,10 @@ def get_range(hash: str):
         raise fastapi.HTTPException(status_code=400, detail="Invalid hash")
 
     hash = hash.upper()
+    key = settings.prefix + hash
 
     try:
-        obj = s3.client.get_object(Bucket=settings.bucket, Key=hash)
+        obj = s3.client.get_object(Bucket=settings.bucket, Key=key)
     except botocore.exceptions.ClientError as e:
         if e.response["Error"]["Code"] == "NoSuchKey":
             # This is not supposed to happen, but technically it could
